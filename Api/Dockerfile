@@ -1,18 +1,15 @@
-FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS build-env
+FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build-env
 WORKDIR /app
 
-FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
-WORKDIR /src
-COPY ["Api/Api.csproj", "Api/"]
-RUN dotnet restore "Api/Api.csproj"
-COPY . .
-WORKDIR "/src/Api"
-RUN dotnet build "Api.csproj" -c Release -o /app/build
+COPY *.csproj .
 
-FROM build AS publish
-RUN dotnet publish "Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet restore
 
-FROM build-env AS final
+COPY . ./
+
+RUN dotnet publish --no-restore -c Release -o out
+
+FROM mcr.microsoft.com/dotnet/aspnet:7.0
 WORKDIR /app
-COPY --from=publish /app/publish . 
+COPY --from-build-env /app/out .
 ENTRYPOINT ["dotnet", "Api.dll"]
